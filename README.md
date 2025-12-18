@@ -30,7 +30,7 @@ Add `android_wifi_p2p` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  android_wifi_p2p: ^1.0.4
+  android_wifi_p2p: ^1.0.0
 ```
 
 ### 2. Android Manifest Configuration
