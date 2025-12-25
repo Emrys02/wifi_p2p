@@ -1,6 +1,6 @@
 name: android_wifi_p2p
 description: "A Flutter plugin for Android Wi-Fi P2P (Peer-to-Peer) API. Enables device-to-device connections without an access point, with support for peer discovery, connection management, group operations, and socket messaging."
-version: 1.0.0
+version: 1.1.0
 homepage: https://github.com/Emrys02/android-wifi-p2p
 publish_to: 'none'
 
