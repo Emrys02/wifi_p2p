@@ -145,7 +145,9 @@ class AndroidWifiP2pPlugin :
         // Initialize socket manager
         socketManager = SocketManager { data ->
             P2pLogger.d(TAG, "Received message from SocketManager: ${data.size} bytes")
-            messageEventSink?.success(data)
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                messageEventSink?.success(data)
+            }
         }
     }
 
@@ -245,7 +247,7 @@ class AndroidWifiP2pPlugin :
             }
 
             "sendMessage" -> {
-                val message = call.argument<ByteArray>("message")
+                val message = call.arguments as ByteArray
                 if (message != null) {
                     sendMessage(message, result)
                 } else {
@@ -691,7 +693,7 @@ class AndroidWifiP2pPlugin :
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         P2pLogger.d(TAG, "onDetachedFromEngine")
         unregister()
-        socketManager?.cleanup()
+        socketManager?.destroy()
         socketManager = null
         channel.setMethodCallHandler(null)
         stateEventChannel.setStreamHandler(null)

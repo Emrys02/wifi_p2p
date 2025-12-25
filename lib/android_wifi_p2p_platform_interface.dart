@@ -75,9 +75,7 @@ abstract class AndroidWifiP2pPlatform extends PlatformInterface {
 
   /// Requests the current connection info.
   Future<WifiP2pInfo?> requestConnectionInfo() {
-    throw UnimplementedError(
-      'requestConnectionInfo() has not been implemented.',
-    );
+    throw UnimplementedError('requestConnectionInfo() has not been implemented.');
   }
 
   /// Requests the current group info.
@@ -110,38 +108,8 @@ abstract class AndroidWifiP2pPlatform extends PlatformInterface {
     throw UnimplementedError('thisDeviceStream has not been implemented.');
   }
 
-  /// Starts a socket server on the specified port.
-  /// This should be called by the group owner to accept connections.
-  Future<bool> startServer({int port = 8888}) {
-    throw UnimplementedError('startServer() has not been implemented.');
-  }
-
-  /// Stops the socket server.
-  Future<bool> stopServer() {
-    throw UnimplementedError('stopServer() has not been implemented.');
-  }
-
-  /// Connects to a socket server at the specified host and port.
-  /// This should be called by clients to connect to the group owner.
-  Future<bool> connectToServer(
-    String hostAddress, {
-    int port = 8888,
-    int timeout = 5000,
-  }) {
-    throw UnimplementedError('connectToServer() has not been implemented.');
-  }
-
-  /// Disconnects from the socket server.
-  Future<bool> disconnectFromServer() {
-    throw UnimplementedError(
-      'disconnectFromServer() has not been implemented.',
-    );
-  }
-
   /// Sends a message through the socket connection.
-  Future<bool> sendMessage(List<int> message) {
-    throw UnimplementedError('sendMessage() has not been implemented.');
-  }
+  Future<bool> sendMessage(List<int> message);
 
   /// Stream of incoming messages.
   Stream<List<int>> get messageStream {

@@ -2,10 +2,14 @@ package com.android.wifi_p2p
 
 import android.os.Handler
 import android.os.Looper
+import java.io.DataInputStream
+import java.io.DataOutputStream
+import java.io.EOFException
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 
 class SocketManager(private val messageCallback: (ByteArray) -> Unit) {
@@ -21,6 +25,7 @@ class SocketManager(private val messageCallback: (ByteArray) -> Unit) {
     private var isServerRunning = false
     private var isClientRunning = false
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val writeExecutor = Executors.newSingleThreadExecutor()
 
     /**
      * Start a socket server (for group owner)
@@ -121,21 +126,27 @@ class SocketManager(private val messageCallback: (ByteArray) -> Unit) {
                             val inputStream = clientSocket?.getInputStream()
                             val buffer = ByteArray(BUFFER_SIZE)
                             while (isClientRunning) {
-                                val bytesRead = inputStream?.read(buffer) ?: -1
-                                if (bytesRead == -1) break
-                                
-                                val data = buffer.copyOf(bytesRead)
-                                P2pLogger.d(TAG, "Received ${bytesRead} bytes")
-                                mainHandler.post {
-                                    messageCallback(data)
+                                try {
+                                    val bytesRead = inputStream?.read(buffer) ?: -1
+                                    if (bytesRead > 0) {
+                                        val data = buffer.copyOf(bytesRead)
+                                        P2pLogger.d(TAG, "Received $bytesRead bytes")
+                                        mainHandler.post {
+                                            messageCallback(data)
+                                        }
+                                    } else if (bytesRead == -1) {
+                                         P2pLogger.d(TAG, "Server closed connection (EOF)")
+                                         break
+                                    }
+                                } catch (e: Exception) {
+                                     if (isClientRunning) {
+                                         P2pLogger.e(TAG, "Error reading from server", e)
+                                     }
+                                     break
                                 }
                             }
-                        } catch (e: java.net.SocketException) {
-                            P2pLogger.d(TAG, "Connection closed: ${e.message}")
                         } catch (e: Exception) {
-                            if (isClientRunning) {
-                                P2pLogger.e(TAG, "Error reading from server", e)
-                            }
+                            P2pLogger.e(TAG, "Connection error", e)
                         } finally {
                             disconnectFromServer()
                         }
@@ -183,23 +194,27 @@ class SocketManager(private val messageCallback: (ByteArray) -> Unit) {
      */
     fun sendMessage(data: ByteArray): Boolean {
         P2pLogger.d(TAG, "Sending ${data.size} bytes")
-        thread {
+        writeExecutor.execute {
             try {
                 if (isServerRunning) {
                     P2pLogger.v(TAG, "Broadcasting to ${connectedClients.size} clients")
                     for (client in connectedClients) {
                         try {
-                            val outputStream = client.getOutputStream()
-                            outputStream.write(data)
-                            outputStream.flush()
+                            synchronized(client) {
+                                val outputStream = client.getOutputStream()
+                                outputStream.write(data)
+                                outputStream.flush()
+                            }
                         } catch (e: Exception) {
                             P2pLogger.e(TAG, "Error sending to client ${client.inetAddress.hostAddress}", e)
                         }
                     }
                 } else if (isClientRunning && clientSocket != null) {
-                    val outputStream = clientSocket!!.getOutputStream()
-                    outputStream.write(data)
-                    outputStream.flush()
+                    synchronized(clientSocket!!) {
+                        val outputStream = clientSocket!!.getOutputStream()
+                        outputStream.write(data)
+                        outputStream.flush()
+                    }
                 } else {
                     P2pLogger.d(TAG, "Cannot send message: No connection")
                 }
@@ -220,17 +235,25 @@ class SocketManager(private val messageCallback: (ByteArray) -> Unit) {
                 val buffer = ByteArray(BUFFER_SIZE)
 
                 while (isServerRunning && !client.isClosed) {
-                    val bytesRead = inputStream.read(buffer)
-                    if (bytesRead == -1) break
-                    
-                    val data = buffer.copyOf(bytesRead)
-                    P2pLogger.d(TAG, "Received ${bytesRead} bytes from client ${client.inetAddress.hostAddress}")
-                    mainHandler.post {
-                        messageCallback(data)
+                    try {
+                        val bytesRead = inputStream.read(buffer)
+                        if (bytesRead > 0) {
+                            val data = buffer.copyOf(bytesRead)
+                            P2pLogger.d(TAG, "Received $bytesRead bytes from client ${client.inetAddress.hostAddress}")
+                            mainHandler.post {
+                                messageCallback(data)
+                            }
+                        } else if (bytesRead == -1) {
+                            P2pLogger.d(TAG, "Client disconnected (EOF)")
+                            break
+                        }
+                    } catch (e: Exception) {
+                        if (isServerRunning && !client.isClosed) {
+                             P2pLogger.e(TAG, "Error reading from client", e)
+                        }
+                        break
                     }
                 }
-            } catch (e: java.net.SocketException) {
-                P2pLogger.d(TAG, "Client disconnected: ${e.message}")
             } catch (e: Exception) {
                 P2pLogger.e(TAG, "Error handling client", e)
             } finally {
@@ -252,5 +275,14 @@ class SocketManager(private val messageCallback: (ByteArray) -> Unit) {
         P2pLogger.d(TAG, "Cleaning up SocketManager")
         stopServer()
         disconnectFromServer()
+    }
+
+    /**
+     * Destroy the SocketManager and release thread resources
+     */
+    fun destroy() {
+        P2pLogger.d(TAG, "Destroying SocketManager")
+        cleanup()
+        writeExecutor.shutdown()
     }
 }

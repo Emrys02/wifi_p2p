@@ -163,53 +163,6 @@ class AndroidWifiP2p {
     return AndroidWifiP2pPlatform.instance.thisDeviceStream;
   }
 
-  /// Starts a TCP socket server on the specified [port].
-  ///
-  /// **Role**: Only the **Group Owner** should call this method.
-  ///
-  /// This opens a `ServerSocket` that listens for incoming client connections (default port 8888).
-  /// Incoming messages will be emitted via [messageStream].
-  ///
-  /// Returns `true` if the server started successfully.
-  Future<bool> startServer({int port = 8888}) {
-    return AndroidWifiP2pPlatform.instance.startServer(port: port);
-  }
-
-  /// Stops the TCP socket server.
-  ///
-  /// Closes the `ServerSocket` and disconnects any currently connected clients.
-  Future<bool> stopServer() {
-    return AndroidWifiP2pPlatform.instance.stopServer();
-  }
-
-  /// Connects to a TCP socket server at the given [hostAddress].
-  ///
-  /// **Role**: **Clients** (non-Group Owners) should call this method.
-  ///
-  /// - [hostAddress]: The IP address of the Group Owner, usually obtained from [WifiP2pInfo.groupOwnerAddress].
-  /// - [port]: The port the server is listening on (default 8888).
-  /// - [timeout]: Connection timeout in milliseconds (default 5000).
-  ///
-  /// Returns `true` if the socket connection was established.
-  Future<bool> connectToServer(
-    String hostAddress, {
-    int port = 8888,
-    int timeout = 5000,
-  }) {
-    return AndroidWifiP2pPlatform.instance.connectToServer(
-      hostAddress,
-      port: port,
-      timeout: timeout,
-    );
-  }
-
-  /// Disconnects from the TCP socket server.
-  ///
-  /// Closes the client socket.
-  Future<bool> disconnectFromServer() {
-    return AndroidWifiP2pPlatform.instance.disconnectFromServer();
-  }
-
   /// Sends a byte array message through the socket connection.
   ///
   /// - This works bi-directionally:

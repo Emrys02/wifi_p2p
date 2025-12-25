@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show Uint8List, visibleForTesting;
 import 'package:flutter/services.dart';
 
 import 'android_wifi_p2p_platform_interface.dart';
@@ -20,15 +20,11 @@ class MethodChannelAndroidWifiP2p extends AndroidWifiP2pPlatform {
 
   /// The event channel for connection info updates.
   @visibleForTesting
-  final connectionInfoEventChannel = const EventChannel(
-    'android_wifi_p2p/connection_info',
-  );
+  final connectionInfoEventChannel = const EventChannel('android_wifi_p2p/connection_info');
 
   /// The event channel for this device info updates.
   @visibleForTesting
-  final thisDeviceEventChannel = const EventChannel(
-    'android_wifi_p2p/this_device',
-  );
+  final thisDeviceEventChannel = const EventChannel('android_wifi_p2p/this_device');
 
   /// The event channel for incoming messages.
   @visibleForTesting
@@ -75,9 +71,7 @@ class MethodChannelAndroidWifiP2p extends AndroidWifiP2pPlatform {
 
   @override
   Future<bool> connect(String deviceAddress) async {
-    final result = await methodChannel.invokeMethod<bool>('connect', {
-      'deviceAddress': deviceAddress,
-    });
+    final result = await methodChannel.invokeMethod<bool>('connect', {'deviceAddress': deviceAddress});
     return result ?? false;
   }
 
@@ -101,9 +95,7 @@ class MethodChannelAndroidWifiP2p extends AndroidWifiP2pPlatform {
 
   @override
   Future<WifiP2pInfo?> requestConnectionInfo() async {
-    final result = await methodChannel.invokeMethod<Map>(
-      'requestConnectionInfo',
-    );
+    final result = await methodChannel.invokeMethod<Map>('requestConnectionInfo');
     if (result == null) return null;
     return WifiP2pInfo.fromJson(Map<String, dynamic>.from(result));
   }
@@ -119,16 +111,12 @@ class MethodChannelAndroidWifiP2p extends AndroidWifiP2pPlatform {
   Future<List<WifiP2pDevice>> requestPeers() async {
     final result = await methodChannel.invokeMethod<List>('requestPeers');
     if (result == null) return [];
-    return result
-        .map((e) => WifiP2pDevice.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
+    return result.map((e) => WifiP2pDevice.fromJson(Map<String, dynamic>.from(e))).toList();
   }
 
   @override
   Stream<WifiP2pState> get wifiP2pStateStream {
-    _wifiP2pStateStream ??= stateEventChannel.receiveBroadcastStream().map(
-      (event) => WifiP2pStateExtension.fromInt(event as int),
-    );
+    _wifiP2pStateStream ??= stateEventChannel.receiveBroadcastStream().map((event) => WifiP2pStateExtension.fromInt(event as int));
     return _wifiP2pStateStream!;
   }
 
@@ -136,80 +124,29 @@ class MethodChannelAndroidWifiP2p extends AndroidWifiP2pPlatform {
   Stream<List<WifiP2pDevice>> get peersStream {
     _peersStream ??= peersEventChannel.receiveBroadcastStream().map((event) {
       final list = event as List;
-      return list
-          .map((e) => WifiP2pDevice.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+      return list.map((e) => WifiP2pDevice.fromJson(Map<String, dynamic>.from(e))).toList();
     });
     return _peersStream!;
   }
 
   @override
   Stream<WifiP2pInfo> get connectionInfoStream {
-    _connectionInfoStream ??= connectionInfoEventChannel
-        .receiveBroadcastStream()
-        .map((event) => WifiP2pInfo.fromJson(Map<String, dynamic>.from(event)));
+    _connectionInfoStream ??= connectionInfoEventChannel.receiveBroadcastStream().map((event) => WifiP2pInfo.fromJson(Map<String, dynamic>.from(event)));
     return _connectionInfoStream!;
   }
 
   @override
   Stream<WifiP2pDevice> get thisDeviceStream {
-    _thisDeviceStream ??= thisDeviceEventChannel.receiveBroadcastStream().map(
-      (event) => WifiP2pDevice.fromJson(Map<String, dynamic>.from(event)),
-    );
+    _thisDeviceStream ??= thisDeviceEventChannel.receiveBroadcastStream().map((event) => WifiP2pDevice.fromJson(Map<String, dynamic>.from(event)));
     return _thisDeviceStream!;
   }
 
   @override
-  Future<bool> startServer({int port = 8888}) async {
-    final result = await methodChannel.invokeMethod<bool>('startServer', {
-      'port': port,
-    });
-    return result ?? false;
-  }
-
-  @override
-  Future<bool> stopServer() async {
-    final result = await methodChannel.invokeMethod<bool>('stopServer');
-    return result ?? false;
-  }
-
-  @override
-  Future<bool> connectToServer(
-    String hostAddress, {
-    int port = 8888,
-    int timeout = 5000,
-  }) async {
-    final result = await methodChannel.invokeMethod<bool>('connectToServer', {
-      'hostAddress': hostAddress,
-      'port': port,
-      'timeout': timeout,
-    });
-    return result ?? false;
-  }
-
-  @override
-  Future<bool> disconnectFromServer() async {
-    final result = await methodChannel.invokeMethod<bool>(
-      'disconnectFromServer',
-    );
-    return result ?? false;
-  }
-
-  @override
   Future<bool> sendMessage(List<int> message) async {
-    final success = await methodChannel.invokeMethod<bool>('sendMessage', {
-      'message': message,
-    });
-    return success ?? false;
+    final success = await methodChannel.invokeMethod<bool>('sendMessage', Uint8List.fromList(message)) as bool;
+    return success;
   }
 
   @override
-  Stream<List<int>> get messageStream =>
-      messageEventChannel.receiveBroadcastStream().map((event) {
-        if (event is List) {
-          return event.cast<int>();
-        } else {
-          return [];
-        }
-      });
+  Stream<List<int>> get messageStream => messageEventChannel.receiveBroadcastStream().map((event) => event as List<int>);
 }
