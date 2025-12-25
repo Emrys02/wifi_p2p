@@ -111,40 +111,29 @@ await wifiP2p.connect('AA:BB:CC:DD:EE:FF');
 
 ```dart
 // Get platform version
-final version = await AndroidWifiP2p.getPlatformVersion();
+final version = await wifiP2p.getPlatformVersion();
 
 // Get the current device name (e.g., "Pixel 7")
-final deviceName = await AndroidWifiP2p.getDeviceName();
+final deviceName = await wifiP2p.getDeviceName();
 print("My Device Name: $deviceName");
 ```
 
 ### Socket Communication
 
-After a connection is established, you can communicate using sockets.
+After a connection is established, the plugin automatically opens a socket channel between the devices. You can send and receive data using the `sendMessage` method and `messageStream`.
 
-**Group Owner (Server):**
 ```dart
-// Start the server
-await wifiP2p.startServer();
+import 'dart:convert';
 
-// Listen for messages
-wifiP2p.messageStream.listen((msg) {
-  print("Received from client: $msg");
+// Listen for incoming messages
+wifiP2p.messageStream.listen((data) {
+  final msg = utf8.decode(data);
+  print("Received: $msg");
 });
-```
 
-**Client:**
-```dart
-// Get connection info to find the group owner's address
-final info = await wifiP2p.requestConnectionInfo();
-
-if (info != null && info.groupOwnerAddress != null) {
-  // Connect to the server
-  await wifiP2p.connectToServer(info.groupOwnerAddress!);
-  
-  // Send a message
-  await wifiP2p.sendMessage("Hello World!");
-}
+// Send a message
+final text = "Hello World!";
+await wifiP2p.sendMessage(utf8.encode(text));
 ```
 
 ### Clean Up
@@ -173,11 +162,7 @@ await wifiP2p.unregister();
 ### Socket Methods
 | Method | Description |
 |--------|-------------|
-| `startServer({port})` | Starts a socket server on the leader device. |
-| `stopServer()` | Stops the socket server. |
-| `connectToServer(ip, {port})` | Connects a client to the server's IP. |
-| `disconnectFromServer()` | Disconnects the socket. |
-| `sendMessage(text)` | Sends a text message to the connected socket. |
+| `sendMessage(bytes)` | Sends a byte array message to the connected socket. |
 
 ### Streams
 | Stream | Description |
@@ -186,7 +171,7 @@ await wifiP2p.unregister();
 | `peersStream` | List of discovered peers. |
 | `connectionInfoStream` | Updates on connection status and group ownership. |
 | `thisDeviceStream` | Updates on this device's status. |
-| `messageStream` | Incoming text messages from sockets. |
+| `messageStream` | Incoming data (bytes) from sockets. |
 
 ## License
 
